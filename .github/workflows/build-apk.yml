@@ -1,0 +1,56 @@
+name: Build My Music APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        run: |
+          unzip -q My-Music-3.0-Android-Project.zip -d extracted
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: extracted/my-music-app
+        run: npm install
+
+      - name: Add Android platform
+        working-directory: extracted/my-music-app
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        working-directory: extracted/my-music-app
+        run: npm run sync
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build APK
+        working-directory: extracted/my-music-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: My-Music-APK
+          path: extracted/my-music-app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
